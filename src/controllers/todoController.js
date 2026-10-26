@@ -175,3 +175,37 @@ export const updateTodoByStatus = async (req, res) => {
     });
   }
 };
+
+
+
+export const deleteTodo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "bad request",
+      });
+    }
+
+    const todo = await Todo.findByIdAndDelete(id);
+
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        message: "Todo not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: `todo deleted successfully`,
+    });
+  } catch (error) {
+    console.error("Error: ", error);
+    return res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error.message,
+    });
+  }
+};
