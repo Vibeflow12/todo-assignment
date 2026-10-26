@@ -34,7 +34,8 @@ export const fetchTodos = async (req, res) => {
   try {
     const { completed } = req.query;
 
-    const query = completed !== undefined ? {completed:completed =='true'} : {}
+    const query =
+      completed !== undefined ? { completed: completed == "true" } : {};
 
     const todos = await Todo.find(query);
 
@@ -54,7 +55,7 @@ export const fetchTodos = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 export const fetchOneTodo = async (req, res) => {
   try {
@@ -115,7 +116,7 @@ export const updateTodo = async (req, res) => {
       {
         $set: { title, description },
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!todo) {
@@ -127,6 +128,42 @@ export const updateTodo = async (req, res) => {
 
     return res.status(200).json({
       message: `todo updated successfully`,
+      todo,
+    });
+  } catch (error) {
+    console.error("Error: ", error);
+    return res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const updateTodoByStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "bad request",
+      });
+    }
+
+    const todo = await Todo.findById(id);
+
+    todo.completed = !todo.completed;
+    await todo.save()
+
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        message: "Todo not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: `TODO status updated successfully`,
       todo,
     });
   } catch (error) {
