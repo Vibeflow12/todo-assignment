@@ -30,7 +30,6 @@ export const createTodo = async (req, res) => {
   }
 };
 
-
 export const fetchTodos = async (req, res) => {
   try {
     const { completed } = req.query;
@@ -57,8 +56,7 @@ export const fetchTodos = async (req, res) => {
   }
 }
 
-
-export const fetchOneTodos = async (req, res) => {
+export const fetchOneTodo = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -79,6 +77,56 @@ export const fetchOneTodos = async (req, res) => {
 
     return res.status(200).json({
       message: `todo fetched successfully`,
+      todo,
+    });
+  } catch (error) {
+    console.error("Error: ", error);
+    return res.status(500).json({
+      success: false,
+      message: "internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const updateTodo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = todoSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        errors: result.error.flatten(),
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "bad request",
+      });
+    }
+
+    const title = result.data.title;
+    const description = result.data.description;
+
+    const todo = await Todo.findOneAndUpdate(
+      { _id: id },
+      {
+        $set: { title, description },
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        message: "Todo not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: `todo updated successfully`,
       todo,
     });
   } catch (error) {
