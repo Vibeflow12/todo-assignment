@@ -32,10 +32,14 @@ export const createTodo = async (req, res) => {
 
 export const fetchTodos = async (req, res) => {
   try {
-    const { completed } = req.query;
+    const { completed, search } = req.query;
 
     const query =
       completed !== undefined ? { completed: completed == "true" } : {};
+
+    if (search) {
+      query.title = { $regex: search, $options: "i" };
+    }
 
     const todos = await Todo.find(query);
 
@@ -153,7 +157,7 @@ export const updateTodoByStatus = async (req, res) => {
     const todo = await Todo.findById(id);
 
     todo.completed = !todo.completed;
-    await todo.save()
+    await todo.save();
 
     if (!todo) {
       return res.status(404).json({
@@ -176,14 +180,13 @@ export const updateTodoByStatus = async (req, res) => {
   }
 };
 
-
-
 export const deleteTodo = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
+        success: false,
         message: "bad request",
       });
     }
