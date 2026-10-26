@@ -41,7 +41,7 @@ export const fetchTodos = async (req, res) => {
       query.title = { $regex: search, $options: "i" };
     }
 
-    const todos = await Todo.find(query);
+    const todos = await Todo.find(query).sort({createdAt: -1});
 
     if (!todos || todos.lenght === 0) {
       return res.status(200).json({});
