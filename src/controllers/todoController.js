@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import Todo from "../models/todoModels.js";
-import { todoSchema } from "../schemas/todoSchemas.js";
+import { paginationSchema, todoSchema } from "../schemas/todoSchemas.js";
 import { safeParse, success } from "zod";
+import { query } from "express";
 
 export const createTodo = async (req, res) => {
   try {
@@ -32,22 +33,46 @@ export const createTodo = async (req, res) => {
 
 export const fetchTodos = async (req, res) => {
   try {
-    const { completed, search } = req.query;
+    const result = paginationSchema.safeParse(req.query)
 
-    const query =
-      completed !== undefined ? { completed: completed == "true" } : {};
+    if (!result.success) {
+      return res.status(400).json({
+        error: "Validation failed",
+        errors: result.error.flatten()
+      });
+    }
+
+    const { completed, search, page, limit } = result.data;
+
+    let query = {}
+
+    if (completed !== undefined) {
+      query.completed = completed;
+    }
 
     if (search) {
       query.title = { $regex: search, $options: "i" };
     }
 
-    const todos = await Todo.find(query).sort({createdAt: -1});
+    const skip = (page - 1) * limit;
+
+    const todos = await Todo.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     if (!todos || todos.lenght === 0) {
       return res.status(200).json({});
     }
 
+    const totalPages = await Todo.countDocuments(query);
+
     return res.status(200).json({
+      success: true,
+      currentPage: page,
+      totalPage: Math.ceil(totalPages / limit),
+      count: todos.length,
+      total: totalTodos,
       message: "all todos fecthed",
       todos,
     });
